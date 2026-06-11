@@ -1,5 +1,10 @@
 RewriteEngine On
 
+# Remove index.php da URL visível
+RewriteCond %{THE_REQUEST} /index\.php [NC]
+RewriteRule ^index\.php/(.*)$ /$1 [R=301,L]
+
+# Redireciona tudo para public/index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+RewriteRule ^(.*)$ public/index.php [QSA,L]
