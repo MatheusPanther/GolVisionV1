@@ -1,0 +1,7 @@
+.env
+.env.local
+storage/cache/*
+storage/logs/*
+!.gitkeep
+.DS_Store
+db-diag.php
