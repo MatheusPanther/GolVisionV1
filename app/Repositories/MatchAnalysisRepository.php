@@ -35,6 +35,7 @@ final class MatchAnalysisRepository extends BaseRepository
         $payload = [
             'match_id' => $matchId,
             'main_tendency' => $analysis['main_tendency'],
+            'game_scenario' => $analysis['game_scenario'] ?? null,
             'over_1_5_probability' => $analysis['over_1_5_probability'],
             'over_2_5_probability' => $analysis['over_2_5_probability'],
             'btts_probability' => $analysis['btts_probability'],
@@ -60,6 +61,7 @@ final class MatchAnalysisRepository extends BaseRepository
             $this->execute(
                 'UPDATE match_analyses
                  SET main_tendency = :main_tendency,
+                     game_scenario = :game_scenario,
                      over_1_5_probability = :over_1_5_probability,
                      over_2_5_probability = :over_2_5_probability,
                      btts_probability = :btts_probability,
@@ -80,9 +82,9 @@ final class MatchAnalysisRepository extends BaseRepository
         } else {
             $this->execute(
                 'INSERT INTO match_analyses
-                 (match_id, main_tendency, over_1_5_probability, over_2_5_probability, btts_probability, confidence_score, risk_level, summary, key_factors_json, red_flags_json, conservative_scenario_json, balanced_scenario_json, bold_scenario_json, disclaimer, model_used, raw_ai_response_json)
+                 (match_id, main_tendency, game_scenario, over_1_5_probability, over_2_5_probability, btts_probability, confidence_score, risk_level, summary, key_factors_json, red_flags_json, conservative_scenario_json, balanced_scenario_json, bold_scenario_json, disclaimer, model_used, raw_ai_response_json)
                  VALUES
-                 (:match_id, :main_tendency, :over_1_5_probability, :over_2_5_probability, :btts_probability, :confidence_score, :risk_level, :summary, :key_factors_json, :red_flags_json, :conservative_scenario_json, :balanced_scenario_json, :bold_scenario_json, :disclaimer, :model_used, :raw_ai_response_json)',
+                 (:match_id, :main_tendency, :game_scenario, :over_1_5_probability, :over_2_5_probability, :btts_probability, :confidence_score, :risk_level, :summary, :key_factors_json, :red_flags_json, :conservative_scenario_json, :balanced_scenario_json, :bold_scenario_json, :disclaimer, :model_used, :raw_ai_response_json)',
                 $payload
             );
         }
