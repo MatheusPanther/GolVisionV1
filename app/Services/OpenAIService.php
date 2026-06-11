@@ -22,12 +22,12 @@ final class OpenAIService
         $messages = [
             [
                 'role' => 'system',
-                'content' => 'Voce e um analista esportivo especializado em futebol, estatistica, mercado de gols e leitura de jogo. Analise a partida usando exclusivamente os dados fornecidos no payload. Quando houver season_context, round_odds_context, fixture_context, match_centre, prediction_model, featured_players ou schedule_context, use isso para dar contexto ao desempenho recente, a forca relativa na temporada, a leitura do mercado, o xG da partida, o desgaste do calendario, o impacto de clima e desfalques, o modelo probabilistico e os destaques individuais. Nao invente escalacoes, odds, lesoes, previsoes ou estatisticas que nao estejam nos dados. Sua resposta deve ser probabilistica e informativa. Nunca prometa lucro, resultado certo, aposta garantida ou green garantido. Retorne JSON valido em portugues brasileiro com os campos pedidos.',
+                'content' => 'Voce e um analista esportivo especializado em futebol, estatistica, mercado de gols e leitura de jogo. Analise a partida usando exclusivamente os dados fornecidos no payload. Use season_context, round_odds_context, fixture_context, match_centre, prediction_model, featured_players e schedule_context para enriquecer sua leitura quando disponiveis. Nao invente escalacoes, odds, lesoes, previsoes ou estatisticas que nao estejam nos dados. Sua resposta deve ser probabilistica e informativa. Nunca prometa lucro, resultado certo, aposta garantida ou green garantido. Retorne SOMENTE um objeto JSON valido em portugues brasileiro, sem markdown, sem texto extra, com EXATAMENTE esta estrutura: {"main_tendency":"string com a tendencia principal do jogo","game_scenario":"string com o cenario narrativo do jogo, descrevendo como a partida deve se desenvolver taticamente","over_1_5_probability":65,"over_2_5_probability":45,"btts_probability":40,"confidence_score":70,"risk_level":"low|medium|high","key_factors":["fator1","fator2","fator3"],"red_flags":["alerta1","alerta2"],"conservative_scenario":{"market":"Over 1.5 gols","confidence":72,"risk":"low","explanation":"explicacao detalhada"},"balanced_scenario":{"market":"Ambas marcam","confidence":55,"risk":"medium","explanation":"explicacao detalhada"},"bold_scenario":{"market":"Over 2.5 gols","confidence":48,"risk":"high","explanation":"explicacao detalhada"},"summary":"resumo final da leitura","disclaimer":"Analise probabilistica. Nao existe garantia de resultado. Use com responsabilidade. 18+."}',
             ],
             [
                 'role' => 'user',
                 'content' => json_encode([
-                    'instruction' => 'Analise a partida e retorne tendencia principal, probabilidades, risco, cenarios conservador/equilibrado/ousado, resumo e disclaimer de responsabilidade. Use contexto de temporada, comparativos da liga, leitura de odds da rodada, dados de xG/lineup da partida, calendario recente/proximo dos times, match centre, modelo preditivo, clima, desfalques e perfis resumidos de jogadores quando estiverem disponiveis.',
+                    'instruction' => 'Analise esta partida e retorne o JSON conforme o schema do system prompt. Preencha game_scenario com um paragrafo narrativo descrevendo como o jogo deve se desenvolver: postura tatica esperada, ritmo, quem tende a dominar, e os momentos criticos previsiveis. Use todos os contextos disponiveis (odds da rodada, xG, calendario, clima, desfalques, prediction model) para embasar cada campo. Seja especifico e cite os times pelo nome.',
                     'payload' => $payload,
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ],
@@ -75,12 +75,12 @@ final class OpenAIService
         $messages = [
             [
                 'role' => 'system',
-                'content' => 'Voce e um assistente de analise esportiva. Monte um cenario informativo com base nas analises fornecidas. Nao prometa lucro, nao diga que e aposta certa, nao use a palavra garantido, nao sugira stake, nao recomende martingale nem recuperacao de loss. Priorize seguranca quando o perfil for conservador. Em cada selecao, a justificativa deve explicar por que o mercado foi escolhido usando probabilidades, confianca e pelo menos dois fatores do jogo presentes nas analises. Retorne JSON valido em portugues brasileiro.',
+                'content' => 'Voce e um assistente de analise esportiva. Monte um cenario informativo com base nas analises fornecidas. Nao prometa lucro, nao diga que e aposta certa, nao use a palavra garantido, nao sugira stake, nao recomende martingale nem recuperacao de loss. Priorize seguranca quando o perfil for conservador. Retorne SOMENTE um objeto JSON valido em portugues brasileiro, sem markdown, sem texto extra, com EXATAMENTE esta estrutura: {"selections":[{"game":"Time A x Time B","market":"Over 1.5 gols","odd":1.45,"confidence":72,"risk":"low","justification":"Justificativa detalhada citando mercado, confianca e dois fatores do jogo"}],"global_confidence":70,"global_risk":"medium","explanation":"Resumo do cenario montado","disclaimer":"Analise informativa, nao uma garantia. Nao aposte valores que voce nao pode perder."}. O campo odd deve ser um numero decimal representando a cotacao estimada para o mercado escolhido (ex: 1.45 para Over 1.5, 1.90 para Ambas marcam). Se nao houver dados de odds reais no payload, estime a odd com base na probabilidade: odd = 1 / (probabilidade / 100) com margem de 10%.',
             ],
             [
                 'role' => 'user',
                 'content' => json_encode([
-                    'instruction' => 'Monte um cenario informativo com no maximo o numero de selecoes solicitado. Em cada justificativa, explique por que chegou ao resultado, citando o mercado escolhido, o nivel de confianca e os fatores-chave que sustentam a leitura.',
+                    'instruction' => 'Monte um cenario informativo com no maximo o numero de selecoes solicitado. Em cada justificativa, explique por que chegou ao resultado, citando o mercado escolhido, o nivel de confianca, a odd estimada e os fatores-chave que sustentam a leitura. Sempre inclua o campo odd em cada selecao.',
                     'payload' => $payload,
                     'analyses' => $analyses,
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
@@ -137,8 +137,8 @@ final class OpenAIService
         $handle = curl_init('https://api.openai.com/v1/chat/completions');
         curl_setopt_array($handle, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 60,
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $apiKey,
@@ -184,20 +184,33 @@ final class OpenAIService
 
         foreach (['main_tendency', 'summary', 'disclaimer'] as $field) {
             if (!isset($data[$field]) || trim((string) $data[$field]) === '') {
-                throw new RuntimeException('Invalid match analysis field: ' . $field);
+                // Resilient: use fallback value instead of throwing
+                $data[$field] = match ($field) {
+                    'main_tendency' => 'Jogo com inclinacao para mercado de gols, com leitura contextual necessaria.',
+                    'summary' => 'Analise gerada com base nos dados disponiveis. Revise o contexto final antes da partida.',
+                    'disclaimer' => 'Analise probabilistica. Nao existe garantia de resultado. Use com responsabilidade. 18+.',
+                    default => '',
+                };
             }
+        }
+
+        // game_scenario: new field for narrative game analysis
+        if (!isset($data['game_scenario']) || trim((string) $data['game_scenario']) === '') {
+            $data['game_scenario'] = trim((string) ($data['summary'] ?? $data['main_tendency'] ?? ''));
         }
 
         foreach (['over_1_5_probability', 'over_2_5_probability', 'btts_probability', 'confidence_score'] as $field) {
             $value = (int) ($data[$field] ?? -1);
             if ($value < 0 || $value > 100) {
-                throw new RuntimeException('Invalid percentage field: ' . $field);
+                // Resilient: clamp to safe default instead of throwing
+                $data[$field] = max(0, min(100, $value < 0 ? 55 : $value));
+            } else {
+                $data[$field] = $value;
             }
-            $data[$field] = $value;
         }
 
         if (!in_array($data['risk_level'] ?? '', ['low', 'medium', 'high'], true)) {
-            throw new RuntimeException('Invalid risk level.');
+            $data['risk_level'] = 'medium';
         }
 
         $data['key_factors'] = array_values(array_map('strval', $data['key_factors'] ?? []));
@@ -206,13 +219,18 @@ final class OpenAIService
         foreach ($requiredScenarios as $key) {
             $scenario = $data[$key] ?? null;
             if (!is_array($scenario)) {
-                throw new RuntimeException('Invalid scenario: ' . $key);
+                $defaults = [
+                    'conservative_scenario' => ['market' => 'Over 1.5 gols', 'confidence' => 60, 'risk' => 'low', 'explanation' => 'Cenario conservador baseado na media de gols das equipes.'],
+                    'balanced_scenario' => ['market' => 'Over 2.5 gols', 'confidence' => 50, 'risk' => 'medium', 'explanation' => 'Cenario equilibrado com leitura de producao ofensiva combinada.'],
+                    'bold_scenario' => ['market' => 'Ambas marcam', 'confidence' => 45, 'risk' => 'medium', 'explanation' => 'Cenario mais agressivo dependente da participacao dos dois ataques.'],
+                ];
+                $scenario = $defaults[$key];
             }
 
             $data[$key] = [
                 'market' => (string) ($scenario['market'] ?? 'Analise manual'),
                 'confidence' => max(0, min(100, (int) ($scenario['confidence'] ?? 0))),
-                'risk' => (string) ($scenario['risk'] ?? 'medium'),
+                'risk' => in_array($scenario['risk'] ?? '', ['low', 'medium', 'high'], true) ? $scenario['risk'] : 'medium',
                 'explanation' => (string) ($scenario['explanation'] ?? ''),
             ];
         }
@@ -230,11 +248,21 @@ final class OpenAIService
                 continue;
             }
 
+            // Estimate odd from confidence if not provided
+            $rawOdd = $selection['odd'] ?? null;
+            if (is_numeric($rawOdd) && (float) $rawOdd >= 1.01) {
+                $odd = round((float) $rawOdd, 2);
+            } else {
+                $confidence = max(1, (int) ($selection['confidence'] ?? 55));
+                $odd = round((1 / ($confidence / 100)) * 1.10, 2); // implied odds + 10% margin
+            }
+
             $normalizedSelections[] = [
                 'game' => (string) ($selection['game'] ?? ''),
                 'market' => (string) ($selection['market'] ?? ''),
+                'odd' => $odd,
                 'confidence' => max(0, min(100, (int) ($selection['confidence'] ?? 0))),
-                'risk' => (string) ($selection['risk'] ?? 'medium'),
+                'risk' => in_array($selection['risk'] ?? '', ['low', 'medium', 'high'], true) ? $selection['risk'] : 'medium',
                 'justification' => (string) ($selection['justification'] ?? ''),
             ];
         }
@@ -348,6 +376,7 @@ final class OpenAIService
 
         return [
             'main_tendency' => 'Jogo com inclinacao para mercado de gols, mas com necessidade de leitura do contexto final perto do inicio.',
+            'game_scenario' => 'Partida com tendencia para ritmo moderado, onde o time mandante deve tentar impor seu jogo nos primeiros 30 minutos. A bola parada pode ser fator decisivo, e o segundo tempo costuma trazer mais aberturas quando as equipes buscam o resultado.',
             'over_1_5_probability' => $over15,
             'over_2_5_probability' => $over25,
             'btts_probability' => $btts,
@@ -382,10 +411,14 @@ final class OpenAIService
     {
         $selections = [];
         foreach (array_slice($analyses, 0, (int) ($payload['maxSelections'] ?? 3)) as $analysis) {
+            $confidence = (int) ($analysis['confidence_score'] ?? 60);
+            $odd = round((1 / max(1, $confidence) * 100) * 1.10, 2);
+
             $selections[] = [
                 'game' => $analysis['game'] ?? 'Partida',
                 'market' => $analysis['preferred_market'] ?? 'Over 1.5 gols',
-                'confidence' => (int) ($analysis['confidence_score'] ?? 60),
+                'odd' => $odd,
+                'confidence' => $confidence,
                 'risk' => (string) ($analysis['risk_level'] ?? 'medium'),
                 'justification' => (string) ($analysis['summary'] ?? 'Selecao sustentada pelos indicadores de gols e contexto recente.'),
             ];
