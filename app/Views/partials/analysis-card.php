@@ -5,6 +5,7 @@ declare(strict_types=1);
 $analysis = is_array($analysis ?? null) ? $analysis : [];
 $keyFactors = is_array($analysis['key_factors'] ?? null) ? array_values($analysis['key_factors']) : [];
 $redFlags = is_array($analysis['red_flags'] ?? null) ? array_values($analysis['red_flags']) : [];
+$gameScenario = trim((string) ($analysis['game_scenario'] ?? ''));
 $scenarioGroups = [
     'Conservador' => is_array($analysis['conservative_scenario'] ?? null) ? $analysis['conservative_scenario'] : [],
     'Equilibrado' => is_array($analysis['balanced_scenario'] ?? null) ? $analysis['balanced_scenario'] : [],
@@ -47,6 +48,13 @@ $scenarioGroups = [
             </ul>
         </div>
     </div>
+
+    <?php if ($gameScenario !== ''): ?>
+        <div class="game-scenario-block">
+            <h3>Cenario do jogo</h3>
+            <p><?= e($gameScenario) ?></p>
+        </div>
+    <?php endif; ?>
 
     <div class="scenario-grid">
         <?php foreach ($scenarioGroups as $scenarioLabel => $scenario): ?>
