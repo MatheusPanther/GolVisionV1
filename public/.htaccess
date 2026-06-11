@@ -1,8 +1,8 @@
 RewriteEngine On
 
-# Remove index.php da URL visível
-RewriteCond %{THE_REQUEST} /index\.php [NC]
-RewriteRule ^index\.php/(.*)$ /$1 [R=301,L]
+# Remove /index.php/ da URI internamente (sem redirect, sem mudar a URL do browser)
+RewriteCond %{REQUEST_URI} ^/index\.php/(.*)$ [NC]
+RewriteRule ^index\.php/(.*)$ /$1 [L,QSA]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
