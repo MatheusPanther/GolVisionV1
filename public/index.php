@@ -46,8 +46,21 @@ if ($method === 'HEAD') {
 }
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$baseScript = dirname($_SERVER['SCRIPT_NAME'] ?? '');
 
+// Remove /index.php ou /public/index.php do inicio da URI
+foreach (['/public/index.php', '/index.php'] as $prefix) {
+    if ($uri === $prefix) {
+        $uri = '/';
+        break;
+    }
+    if (str_starts_with($uri, $prefix . '/')) {
+        $uri = substr($uri, strlen($prefix));
+        break;
+    }
+}
+
+// Remove prefixo do SCRIPT_NAME se necessário
+$baseScript = dirname($_SERVER['SCRIPT_NAME'] ?? '');
 if ($baseScript !== '/' && $baseScript !== '.' && str_starts_with($uri, $baseScript)) {
     $uri = substr($uri, strlen($baseScript)) ?: '/';
 }
