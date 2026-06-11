@@ -143,7 +143,7 @@ final class MatchRepository extends BaseRepository
     {
         try {
             return $this->fetchOne(
-                'SELECT m.*,
+                'SELECT m.*, m.id AS id,
                         l.name AS league_name,
                         l.country AS league_country,
                         l.logo AS league_logo,
@@ -168,7 +168,7 @@ final class MatchRepository extends BaseRepository
             $this->logSchemaFallback('findById', $exception);
 
             return $this->fetchOne(
-                "SELECT m.*,
+                "SELECT m.*, m.id AS id,
                         l.name AS league_name,
                         '' AS league_country,
                         NULL AS league_logo,
@@ -199,7 +199,7 @@ final class MatchRepository extends BaseRepository
 
     public function fixturesByDate(string $date, array $filters = []): array
     {
-        $sql = 'SELECT m.*,
+        $sql = 'SELECT m.*, m.id AS id,
                        l.name AS league_name,
                        l.country AS league_country,
                        l.logo AS league_logo,
@@ -254,7 +254,7 @@ final class MatchRepository extends BaseRepository
 
             $this->logSchemaFallback('fixturesByDate', $exception);
 
-            $legacySql = "SELECT m.*,
+            $legacySql = "SELECT m.*, m.id AS id,
                                  l.name AS league_name,
                                  '' AS league_country,
                                  NULL AS league_logo,
