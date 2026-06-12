@@ -45,25 +45,20 @@ if ($method === 'HEAD') {
     $method = 'GET';
 }
 
-// Pega PATH_INFO se disponivel (mais confiavel quando index.php e o front controller)
-if (isset($_SERVER['PATH_INFO']) && $_SERVER['PATH_INFO'] !== '') {
-    $uri = $_SERVER['PATH_INFO'];
-} else {
-    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    // Remove /index.php ou /public/index.php do inicio
-    foreach (['/public/index.php', '/index.php'] as $strip) {
-        if ($uri === $strip) {
-            $uri = '/';
-            break;
-        }
-        if (str_starts_with($uri, $strip . '/')) {
-            $uri = substr($uri, strlen($strip));
-            break;
-        }
+$uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+// Remove /index.php ou /public/index.php do inicio da URI
+foreach (['/public/index.php', '/index.php'] as $strip) {
+    if ($uri === $strip) {
+        $uri = '/';
+        break;
+    }
+    if (str_starts_with($uri, $strip . '/')) {
+        $uri = substr($uri, strlen($strip));
+        break;
     }
 }
 
-// Garante formato correto
 if ($uri === '' || $uri[0] !== '/') {
     $uri = '/' . $uri;
 }
