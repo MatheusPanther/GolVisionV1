@@ -45,26 +45,31 @@ if ($method === 'HEAD') {
     $method = 'GET';
 }
 
-$uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-
-// Remove /index.php ou /public/index.php do inicio da URI
-foreach (['/public/index.php', '/index.php'] as $prefix) {
-    if ($uri === $prefix) {
-        $uri = '/';
-        break;
-    }
-    if (str_starts_with($uri, $prefix . '/')) {
-        $uri = substr($uri, strlen($prefix));
-        break;
+// Pega PATH_INFO se disponivel (mais confiavel quando index.php e o front controller)
+if (isset($_SERVER['PATH_INFO']) && $_SERVER['PATH_INFO'] !== '') {
+    $uri = $_SERVER['PATH_INFO'];
+} else {
+    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    // Remove /index.php ou /public/index.php do inicio
+    foreach (['/public/index.php', '/index.php'] as $strip) {
+        if ($uri === $strip) {
+            $uri = '/';
+            break;
+        }
+        if (str_starts_with($uri, $strip . '/')) {
+            $uri = substr($uri, strlen($strip));
+            break;
+        }
     }
 }
 
-// Remove prefixo do SCRIPT_NAME se necessário
-$baseScript = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-if ($baseScript !== '/' && $baseScript !== '.' && str_starts_with($uri, $baseScript)) {
-    $uri = substr($uri, strlen($baseScript)) ?: '/';
+// Garante formato correto
+if ($uri === '' || $uri[0] !== '/') {
+    $uri = '/' . $uri;
 }
 
-$uri = normalize_internal_path($uri);
+if (strlen($uri) > 1 && str_ends_with($uri, '/')) {
+    $uri = rtrim($uri, '/');
+}
 
 $router->dispatch($method, $uri);
