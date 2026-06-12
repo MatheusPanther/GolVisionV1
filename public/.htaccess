@@ -1,11 +1,4 @@
 RewriteEngine On
-Options -MultiViews
-DirectoryIndex index.php
-
-RewriteCond %{REQUEST_URI} ^/public/ [NC]
-RewriteRule ^public/ - [L]
-
-RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
