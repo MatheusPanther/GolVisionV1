@@ -151,7 +151,10 @@ final class UserRepository extends BaseRepository
                  WHERE id = :id',
                 [
                     'id' => (int) $existing['id'],
-                    ...$payload,
+                    'password_hash' => $payload['password_hash'],
+                    'name' => $payload['name'],
+                    'plan' => $payload['plan'],
+                    'accepted_terms_at' => $payload['accepted_terms_at'],
                 ]
             );
 
