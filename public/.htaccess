@@ -1,10 +1,12 @@
 RewriteEngine On
+Options -MultiViews
+DirectoryIndex index.php
 
-# Remove /index.php/ da URL visivel (redirect 301)
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php/ [NC]
-RewriteRule ^index\.php/(.*)$ /$1 [R=301,L]
+RewriteCond %{REQUEST_URI} ^/public/ [NC]
+RewriteRule ^public/ - [L]
 
-# Passa tudo para index.php como PATH_INFO
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+RewriteRule ^(.*)$ index.php [L,QSA]
